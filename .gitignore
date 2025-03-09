@@ -1,3 +1,15 @@
+# Ignore files with no extension (except known source files)
+# This ignores all files without a dot (.)
+*
+!*/
+!*.cpp
+!*.h
+!*.hpp
+!Makefile
+!CMakeLists.txt
+
+*.dSYM
+
 # Prerequisites
 *.d
 
