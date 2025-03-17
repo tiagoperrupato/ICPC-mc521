@@ -1,84 +1,88 @@
 #include <iostream>
-#include <cmath>
-#include <cstdio>
 #include <vector>
+#include <fstream>
 
 using namespace std;
-typedef vector<int> vi;
 
-void printAdjList(const vector<pair<int, vi>>& AdjList) {
-    for (int i = 0; i < AdjList.size(); i++) {
-        cout << i + 1 << ": " << AdjList[i].first << ":  ";
-        for (int j = 0; j < AdjList[i].second.size(); j++) {
-            cout << AdjList[i].second[j] << " ";
-        }
-        cout << endl;
+#define INPUT_FILE "closing.in"
+#define OUTPUT_FILE "closing.out"
+
+class DSU {
+public:
+    vector<int> parent, size;
+
+    DSU(int n) {
+        parent.resize(n);
+        size.resize(n, 1);
+        for (int i = 0; i < n; i++) parent[i] = i;
     }
-}
 
-bool isConnectedDFS(const vector<pair<int, vi>>& AdjList, int N, int firstNode, int openNodes) {
-    vector<bool> visited(N, false); // Keeps track of visited nodes
-    int visitedCount = 0;
+    int find(int x) {
+        if (parent[x] == x) return x;
+        return parent[x] = find(parent[x]);  // Path compression
+    }
 
-    // Helper function for DFS traversal
-    function<void(int)> dfs = [&](int u) {
-        visited[u] = true;
-        visitedCount++;
-        for (int v : AdjList[u].second) {
-            if (!visited[v - 1]) {
-                dfs(v - 1);
-            }
+    void unite(int x, int y) {
+        int rootX = find(x), rootY = find(y);
+        if (rootX != rootY) {
+            if (size[rootX] < size[rootY]) swap(rootX, rootY);
+            parent[rootY] = rootX;
+            size[rootX] += size[rootY];
         }
-    };
-
-    // Start DFS from node firstNode
-    dfs(firstNode - 1);
-
-    // If we visited all nodes, the graph is connected
-    return visitedCount == openNodes;
-}
-
+    }
+};
 
 int main() {
-    
+    ifstream fin(INPUT_FILE);
+    ofstream fout(OUTPUT_FILE);
+
     int N, M;
-    vector<pair<int, vi>> AdjList;
-    vector<int> open;
+    fin >> N >> M;
 
-    cin >> N >> M;
-    open.assign(N, 0);
-    AdjList.assign(N, pair<int, vi>());
-
-    for (int i = 0; i < N; i++) {
-        open[i] = i + 1;
-    }
-
+    vector<vector<int>> AdjList(N);
+    vector<int> closingOrder(N);
+    vector<bool> active(N, false);
+    DSU dsu(N);
+    
     for (int i = 0; i < M; i++) {
         int u, v;
-        cin >> u >> v;
-        AdjList[u - 1].second.push_back(v);
-        AdjList[v - 1].second.push_back(u);
+        fin >> u >> v;
+        AdjList[u - 1].push_back(v - 1);
+        AdjList[v - 1].push_back(u - 1);
     }
 
     for (int i = 0; i < N; i++) {
-        if (isConnectedDFS(AdjList, N, open[0], open.size())) {
-            cout << "YES" << endl;
-        } else {
-            cout << "NO" << endl;
+        fin >> closingOrder[i];
+        closingOrder[i]--;  // Convert to zero-based index
+    }
+    fin.close();
+
+    vector<string> result;
+    int components = 0;
+
+    // Process barns in reverse closure order (effectively "reopening" them)
+    for (int i = N - 1; i >= 0; i--) {
+        int barn = closingOrder[i];
+        active[barn] = true;
+        components++;
+
+        // Connect it to its neighbors if they are also active
+        for (int neighbor : AdjList[barn]) {
+            if (active[neighbor] && dsu.find(barn) != dsu.find(neighbor)) {
+                dsu.unite(barn, neighbor);
+                components--;  // Merging reduces the number of components
+            }
         }
 
-        int u;
-        cin >> u;
-
-        for (pair<int, vi>& v : AdjList) {
-            auto it = find(v.second.begin(), v.second.end(), u);
-            if (it != v.second.end())
-                v.second.erase(it);
-        }
-        AdjList[u - 1].second.clear();
-        AdjList[u - 1].first = 1;
-        open.erase(remove(open.begin(), open.end(), u), open.end());
+        // If there's only one component, the farm is fully connected
+        result.push_back(components == 1 ? "YES" : "NO");
     }
 
+    // Reverse output order to match original sequence
+    for (int i = N - 1; i >= 0; i--) {
+        fout << result[i] << endl;
+    }
+
+    fout.close();
     return 0;
 }
