@@ -58,7 +58,8 @@ int main() {
                     if ((k-i) %2 == 0 && (j- i + 1) %2 == 0){
                         int m = (k - i) / 2;
                         int n = (j - i + 1) / 2;
-                        dp[i][j] = (dp[i][j] + (dp[i][k - 1] * 1LL * dp[k + 1][j - 1]) % MOD * getnCk(n, m, memo)) % MOD;
+
+                        dp[i][j] = (dp[i][j] + ((k == 0 ? 1 : dp[i][k - 1]) * 1LL * dp[k + 1][j - 1]) % MOD * getnCk(n, m, memo)) % MOD;
                     }
                 }
             }
